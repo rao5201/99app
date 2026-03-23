@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "BizPilot AI",
+    "slug": "bizpilot-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "bizpilot",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0E27"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bizpilot.ai",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "BizPilot uses the camera to scan documents and receipts.",
+        "NSPhotoLibraryUsageDescription": "BizPilot accesses your photos to import documents."
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0E27"
+      },
+      "package": "com.bizpilot.ai",
+      "versionCode": 1,
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-haptics",
+      [
+        "react-native-purchases",
+        {
+          "ios": {
+            "apiKey": "YOUR_REVENUECAT_IOS_API_KEY"
+          },
+          "android": {
+            "apiKey": "YOUR_REVENUECAT_ANDROID_API_KEY"
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
+    }
+  }
+}

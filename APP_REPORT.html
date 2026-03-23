@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BizPilot AI - App 项目报告</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<script>
+tailwind.config={theme:{extend:{colors:{void:'#0A0E27',deep:'#141937',card:'#1E2548',violet:'#6C5CE7',violetL:'#A29BFE',cyan:'#00D2FF',mint:'#00E676',gold:'#FFD700',fire:'#FF5252',border:'#2A3158',muted:'#5A6180',sub:'#8B92B0'},fontFamily:{display:['Space Grotesk','Noto Sans SC','sans-serif'],mono:['JetBrains Mono','monospace']}}}}
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+::selection{background:#6C5CE7;color:#fff}
+body{font-family:'Space Grotesk','Noto Sans SC',sans-serif;background:#0A0E27;color:#e2e8f0;overflow-x:hidden}
+.grain{position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.progress-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#6C5CE7,#00D2FF);z-index:10000;transform-origin:left;will-change:transform}
+.glow-violet{text-shadow:0 0 40px rgba(108,92,231,.5),0 0 80px rgba(108,92,231,.2)}
+.glow-cyan{text-shadow:0 0 40px rgba(0,210,255,.5),0 0 80px rgba(0,210,255,.2)}
+.glow-box-v{box-shadow:0 0 30px rgba(108,92,231,.15),0 8px 32px rgba(0,0,0,.4)}
+.glow-box-c{box-shadow:0 0 30px rgba(0,210,255,.1),0 8px 32px rgba(0,0,0,.4)}
+.gradient-border{position:relative}
+.gradient-border::before{content:'';position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:linear-gradient(135deg,#6C5CE7,#00D2FF,#6C5CE7);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.phone-frame{width:180px;height:360px;border-radius:24px;background:#0A0E27;border:2px solid #2A3158;position:relative;overflow:hidden;flex-shrink:0}
+.phone-frame .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:60px;height:16px;background:#141937;border-radius:0 0 10px 10px;z-index:2}
+.phone-frame .screen{padding:20px 10px 10px;height:100%;display:flex;flex-direction:column;gap:4px;font-size:7px;color:#8B92B0}
+@media(min-width:640px){.phone-frame{width:220px;height:440px;border-radius:28px}.phone-frame .screen{padding:24px 12px 12px;gap:6px;font-size:8px}}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600}
+.timeline-line{position:absolute;left:20px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,#6C5CE7,#00D2FF)}
+.section-reveal{opacity:0;transform:translateY(60px)}
+.hero-float{animation:heroFloat 6s ease-in-out infinite}
+@keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.pulse-dot{animation:pulseDot 2s ease-in-out infinite}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.5)}}
+.typing-dot{display:inline-block;width:4px;height:4px;border-radius:50%;background:#8B92B0;animation:typingBounce .6s ease-in-out infinite}
+.typing-dot:nth-child(2){animation-delay:.15s}
+.typing-dot:nth-child(3){animation-delay:.3s}
+@keyframes typingBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.mesh-bg{background:radial-gradient(ellipse at 20% 50%,rgba(108,92,231,.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(0,210,255,.06) 0%,transparent 50%),radial-gradient(ellipse at 50% 80%,rgba(162,155,254,.05) 0%,transparent 50%)}
+</style>
+</head>
+<body class="mesh-bg">
+<div class="grain"></div>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ========== HERO ========== -->
+<section class="min-h-screen flex items-center justify-center relative px-4 overflow-hidden" id="hero">
+  <div class="absolute inset-0 overflow-hidden">
+    <div class="absolute w-[600px] h-[600px] rounded-full bg-violet/5 blur-[120px] -top-40 -left-40"></div>
+    <div class="absolute w-[500px] h-[500px] rounded-full bg-cyan/5 blur-[100px] -bottom-20 -right-20"></div>
+  </div>
+  <div class="text-center relative z-10 max-w-4xl mx-auto">
+    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-deep/60 backdrop-blur mb-8 hero-tag" style="opacity:0">
+      <span class="w-2 h-2 rounded-full bg-mint pulse-dot"></span>
+      <span class="text-sub text-sm font-mono tracking-wide">PROJECT REPORT 2026</span>
+    </div>
+    <h1 class="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight mb-6 glow-violet hero-title" style="opacity:0">
+      BizPilot <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet to-cyan">AI</span>
+    </h1>
+    <p class="text-xl sm:text-2xl text-sub max-w-2xl mx-auto mb-4 font-light hero-sub" style="opacity:0">
+      Your AI-Powered Business Command Center
+    </p>
+    <p class="text-base text-muted max-w-xl mx-auto mb-10 hero-sub2" style="opacity:0">
+      AI驱动的商业指挥中心 · $99/月 · iOS & Android
+    </p>
+    <div class="flex flex-wrap justify-center gap-4 hero-stats" style="opacity:0">
+      <div class="px-5 py-3 rounded-xl bg-deep/80 border border-border backdrop-blur">
+        <span class="text-2xl font-bold text-violet font-mono">3,963</span>
+        <span class="text-sub text-sm ml-2">Lines of Code</span>
+      </div>
+      <div class="px-5 py-3 rounded-xl bg-deep/80 border border-border backdrop-blur">
+        <span class="text-2xl font-bold text-cyan font-mono">20</span>
+        <span class="text-sub text-sm ml-2">Source Files</span>
+      </div>
+      <div class="px-5 py-3 rounded-xl bg-deep/80 border border-border backdrop-blur">
+        <span class="text-2xl font-bold text-mint font-mono">8</span>
+        <span class="text-sub text-sm ml-2">App Screens</span>
+      </div>
+    </div>
+    <div class="mt-12 hero-scroll" style="opacity:0">
+      <i class="ph ph-caret-double-down text-2xl text-muted animate-bounce"></i>
+    </div>
+  </div>
+</section>
+
+<!-- ========== MARKET ANALYSIS ========== -->
+<section class="py-24 px-4 sm:px-8 relative" id="market">
+  <div class="max-w-6xl mx-auto">
+    <div class="section-reveal">
+      <span class="text-violet font-mono text-sm tracking-widest uppercase">01 / 市场分析</span>
+      <h2 class="text-3xl sm:text-5xl font-bold mt-3 mb-4">Market <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet to-cyan">Analysis</span></h2>
+      <p class="text-sub max-w-2xl text-lg mb-16">AI应用市场正经历爆发式增长，订阅制SaaS模式成为主流盈利方式。</p>
+    </div>
+    <div class="grid md:grid-cols-4 gap-4 mb-16">
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 glow-box-v">
+        <p class="text-muted text-sm font-mono mb-2">AI APP REVENUE GROWTH</p>
+        <p class="text-4xl font-bold text-violet font-mono">200%<span class="text-lg text-violetL">+</span></p>
+        <p class="text-sub text-sm mt-1">YoY 2025-2026</p>
+      </div>
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 glow-box-c">
+        <p class="text-muted text-sm font-mono mb-2">SUBSCRIPTION MARKET</p>
+        <p class="text-4xl font-bold text-cyan font-mono">$45B<span class="text-lg text-cyan/60">+</span></p>
+        <p class="text-sub text-sm mt-1">Annual Revenue</p>
+      </div>
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6">
+        <p class="text-muted text-sm font-mono mb-2">B2B SAAS CONVERSION</p>
+        <p class="text-4xl font-bold text-gold font-mono">2-5%</p>
+        <p class="text-sub text-sm mt-1">At $99/mo tier</p>
+      </div>
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6">
+        <p class="text-muted text-sm font-mono mb-2">PRO RETENTION RATE</p>
+        <p class="text-4xl font-bold text-mint font-mono">85%</p>
+        <p class="text-sub text-sm mt-1">12-month average</p>
+      </div>
+    </div>
+    <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 sm:p-8">
+      <h3 class="text-lg font-semibold mb-1">Top Grossing AI Apps Revenue</h3>
+      <p class="text-muted text-sm mb-6 font-mono">2025年度 AI 应用营收排行 (Millions USD)</p>
+      <div id="chartMarket" style="width:100%;height:320px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== APP OVERVIEW ========== -->
+<section class="py-24 px-4 sm:px-8 relative" id="overview">
+  <div class="max-w-6xl mx-auto">
+    <div class="section-reveal">
+      <span class="text-cyan font-mono text-sm tracking-widest uppercase">02 / 应用概览</span>
+      <h2 class="text-3xl sm:text-5xl font-bold mt-3 mb-16">App <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan to-violet">Overview</span></h2>
+    </div>
+    <div class="grid lg:grid-cols-2 gap-8 items-center">
+      <div class="section-reveal">
+        <div class="rounded-3xl bg-deep/80 border border-border p-8 sm:p-10 glow-box-v gradient-border" style="border-radius:24px">
+          <div class="flex items-center gap-4 mb-8">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet to-cyan flex items-center justify-center text-white text-2xl font-bold">B</div>
+            <div>
+              <h3 class="text-2xl font-bold">BizPilot AI</h3>
+              <p class="text-sub text-sm">AI-Powered Business Command Center</p>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <div class="flex items-center gap-3">
+              <i class="ph-fill ph-tag text-violet text-lg"></i>
+              <span class="text-sub">定价</span>
+              <span class="ml-auto font-mono font-bold text-white">$99<span class="text-sub text-sm">/month</span></span>
+            </div>
+            <div class="flex items-center gap-3">
+              <i class="ph-fill ph-gift text-cyan text-lg"></i>
+              <span class="text-sub">免费试用</span>
+              <span class="ml-auto font-mono font-bold text-mint">7 Days</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <i class="ph-fill ph-calendar text-violetL text-lg"></i>
+              <span class="text-sub">年付方案</span>
+              <span class="ml-auto font-mono font-bold text-gold">$799/yr <span class="pill bg-gold/20 text-gold">SAVE 33%</span></span>
+            </div>
+            <div class="flex items-center gap-3">
+              <i class="ph-fill ph-devices text-cyan text-lg"></i>
+              <span class="text-sub">平台</span>
+              <span class="ml-auto"><span class="pill bg-violet/20 text-violetL mr-1">iOS</span><span class="pill bg-cyan/20 text-cyan">Android</span></span>
+            </div>
+            <div class="flex items-center gap-3">
+              <i class="ph-fill ph-users-three text-mint text-lg"></i>
+              <span class="text-sub">目标用户</span>
+              <span class="ml-auto text-sm text-sub">Entrepreneurs & SMBs</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section-reveal grid grid-cols-2 gap-4">
+        <div class="rounded-2xl bg-card/60 border border-border p-5 text-center">
+          <i class="ph-fill ph-brain text-3xl text-violet mb-2"></i>
+          <p class="font-semibold text-sm">AI Engine</p>
+          <p class="text-muted text-xs mt-1">GPT-4o Powered</p>
+        </div>
+        <div class="rounded-2xl bg-card/60 border border-border p-5 text-center">
+          <i class="ph-fill ph-chart-line-up text-3xl text-cyan mb-2"></i>
+          <p class="font-semibold text-sm">Analytics</p>
+          <p class="text-muted text-xs mt-1">Real-time KPIs</p>
+        </div>
+        <div class="rounded-2xl bg-card/60 border border-border p-5 text-center">
+          <i class="ph-fill ph-shield-check text-3xl text-mint mb-2"></i>
+          <p class="font-semibold text-sm">Enterprise</p>
+          <p class="text-muted text-xs mt-1">SOC 2 Ready</p>
+        </div>
+        <div class="rounded-2xl bg-card/60 border border-border p-5 text-center">
+          <i class="ph-fill ph-globe text-3xl text-gold mb-2"></i>
+          <p class="font-semibold text-sm">Cross-Platform</p>
+          <p class="text-muted text-xs mt-1">React Native</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREENS SHOWCASE ========== -->
+<section class="py-24 px-4 sm:px-8 relative overflow-hidden" id="screens">
+  <div class="max-w-7xl mx-auto">
+    <div class="section-reveal text-center mb-16">
+      <span class="text-violet font-mono text-sm tracking-widest uppercase">03 / 界面展示</span>
+      <h2 class="text-3xl sm:text-5xl font-bold mt-3 mb-4">App <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet to-cyan">Screens</span></h2>
+      <p class="text-sub max-w-xl mx-auto">8个精心设计的暗色主题界面，专业级UI体验</p>
+    </div>
+    <div class="flex gap-5 overflow-x-auto pb-8 snap-x snap-mandatory scrollbar-hide" id="screenScroll" style="scrollbar-width:none">
+      <!-- Onboarding -->
+      <div class="section-reveal snap-center flex-shrink-0">
+        <div class="phone-frame hero-float" style="animation-delay:0s">
+          <div class="notch"></div>
+          <div class="screen items-center justify-center text-center">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-violet to-violetL flex items-center justify-center mb-2"><i class="ph-fill ph-rocket text-white text-lg sm:text-xl"></i></div>
+            <p class="text-white font-bold text-[10px] sm:text-xs">AI-Powered Business</p>
+            <p class="text-white font-bold text-[10px] sm:text-xs">Intelligence</p>
+            <p class="text-muted text-[7px] sm:text-[8px] mt-1 px-2">Leverage AI to transform your business decisions</p>
+            <div class="flex gap-1 mt-3"><span class="w-4 h-1 rounded-full bg-violet"></span><span class="w-1 h-1 rounded-full bg-muted"></span><span class="w-1 h-1 rounded-full bg-muted"></span></div>
+            <div class="mt-3 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet to-violetL"><p class="text-white text-[8px] font-bold">Get Started</p></div>
+          </div>
+        </div>
+        <p class="text-center text-sub text-xs mt-4 font-mono">Onboarding</p>
+      </div>
+      <!-- Login -->
+      <div class="section-reveal snap-center flex-shrink-0">
+        <div class="phone-frame hero-float" style="animation-delay:.4s">
+          <div class="notch"></div>
+          <div class="screen items-center">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-violet to-cyan flex items-center justify-center mt-4 mb-1"><i class="ph-fill ph-planet text-white text-base sm:text-lg"></i></div>
+            <p class="text-white font-bold text-[10px] sm:text-xs">BizPilot AI</p>
+            <p class="text-muted text-[7px]">Business Command Center</p>
+            <div class="w-full mt-3 space-y-2 px-1">
+              <div class="bg-card rounded-lg px-2 py-1.5 flex items-center gap-1"><i class="ph ph-envelope text-muted" style="font-size:8px"></i><span class="text-muted" style="font-size:7px">email@company.com</span></div>
+              <div class="bg-card rounded-lg px-2 py-1.5 flex items-center gap-1"><i class="ph ph-lock text-muted" style="font-size:8px"></i><span class="text-muted" style="font-size:7px">••••••••</span></div>
+              <div class="bg-gradient-to-r from-violet to-violetL rounded-lg py-1.5 text-center"><span class="text-white font-bold" style="font-size:8px">Sign In</span></div>
+            </div>
+            <div class="flex items-center gap-2 mt-2 w-full px-1"><div class="flex-1 h-px bg-border"></div><span class="text-muted" style="font-size:6px">OR</span><div class="flex-1 h-px bg-border"></div></div>
+            <div class="flex gap-2 mt-1">
+              <div class="rounded-lg border border-border px-3 py-1"><span style="font-size:7px" class="text-sub">Apple</span></div>
+              <div class="rounded-lg border border-border px-3 py-1"><span style="font-size:7px" class="text-sub">Google</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-center text-sub text-xs mt-4 font-mono">Login</p>
+      </div>
+      <!-- Paywall -->
+      <div class="section-reveal snap-center flex-shrink-0">
+        <div class="phone-frame hero-float" style="animation-delay:.8s">
+          <div class="notch"></div>
+          <div class="screen items-center">
+            <p class="text-white font-bold text-[10px] sm:text-xs mt-2">Unlock Full Power</p>
+            <p class="text-muted" style="font-size:6px">Join 50,000+ business leaders</p>
+            <div class="w-full mt-2 rounded-xl p-2 relative" style="border:1px solid #FFD700;background:rgba(255,215,0,.05)">
+              <span class="pill bg-gold/20 text-gold absolute -top-1.5 left-2" style="font-size:6px">PRO</span>
+              <p class="text-white font-bold text-sm sm:text-base text-center mt-1">$99<span class="text-sub text-[8px]">/mo</span></p>
+              <div class="space-y-1 mt-1">
+                <div class="flex items-center gap-1"><span class="text-mint" style="font-size:7px">✓</span><span style="font-size:6px">Unlimited AI Analysis</span></div>
+                <div class="flex items-center gap-1"><span class="text-mint" style="font-size:7px">✓</span><span style="font-size:6px">Revenue Dashboard</span></div>
+                <div class="flex items-center gap-1"><span class="text-mint" style="font-size:7px">✓</span><span style="font-size:6px">AI Reports & Insights</span></div>
+                <div class="flex items-center gap-1"><span class="text-mint" style="font-size:7px">✓</span><span style="font-size:6px">Team Collaboration</span></div>
+              </div>
+            </div>
+            <div class="w-full mt-2 bg-gradient-to-r from-violet to-violetL rounded-lg py-1.5 text-center"><span class="text-white font-bold" style="font-size:8px">Start 7-Day Free Trial</span></div>
+            <p class="text-muted mt-1" style="font-size:5px">Then $99/month. Cancel anytime.</p>
+          </div>
+        </div>
+        <p class="text-center text-sub text-xs mt-4 font-mono">Paywall</p>
+      </div>
+      <!-- Dashboard -->
+      <div class="section-reveal snap-center flex-shrink-0">
+        <div class="phone-frame hero-float" style="animation-delay:1.2s">
+          <div class="notch"></div>
+          <div class="screen">
+            <div class="flex justify-between items-center"><div><p class="text-muted" style="font-size:6px">Good Morning</p><p class="text-white font-bold text-[9px]">Alex Johnson</p></div><div class="w-5 h-5 rounded-full bg-card flex items-center justify-center"><i class="ph ph-bell text-sub" style="font-size:8px"></i></div></div>
+            <div class="bg-card rounded-lg p-2 mt-1">
+              <p class="text-muted" style="font-size:6px">Total Revenue</p>
+              <p class="text-white font-bold text-sm">$48,329</p>
+              <p class="text-mint" style="font-size:6px">+12.5% ▲</p>
+              <div class="flex items-end gap-[3px] mt-2 h-6">
+                <div class="flex-1 rounded-sm bg-gradient-to-t from-violet to-violetL" style="height:40%"></div>
+                <div class="flex-1 rounded-sm bg-gradient-to-t from-violet to-violetL" style="height:65%"></div>
+                <div class="flex-1 rounded-sm bg-gradient-to-t from-violet to-violetL" style="height:50%"></div>
+                <div class="flex-1 rounded-sm bg-gradient-to-t from-violet to-violetL" style="height:85%"></div>
+                <div class="flex-1 rounded-sm bg-gradient-to-t from-violet to-violetL" style="height:70%"></div>
+                <div class="flex-1 rounded-sm bg-gradient-to-t from-violet to-violetL" style="height:95%"></div>
+                <div class="flex-1 rounded-sm bg-gradient-to-t from-violet to-cyan" style="height:100%"></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-1 mt-1">
+              <div class="bg-card rounded p-1 text-center"><p class="text-white font-bold" style="font-size:8px">2,847</p><p class="text-muted" style="font-size:5px">Customers</p></div>
+              <div class="bg-card rounded p-1 text-center"><p class="text-white font-bold" style="font-size:8px">23</p><p class="text-muted" style="font-size:5px">Tasks</p></div>
+              <div class="bg-card rounded p-1 text-center"><p class="text-white font-bold" style="font-size:8px">7</p><p class="text-muted" style="font-size:5px">Insights</p></div>
+            </div>
+            <p class="text-sub font-bold mt-1" style="font-size:7px">AI Quick Actions</p>
+            <div class="grid grid-cols-2 gap-1">
+              <div class="bg-card rounded p-1 flex items-center gap-1"><i class="ph ph-file-text text-violet" style="font-size:8px"></i><span style="font-size:6px">Report</span></div>
+              <div class="bg-card rounded p-1 flex items-center gap-1"><i class="ph ph-trend-up text-cyan" style="font-size:8px"></i><span style="font-size:6px">Trends</span></div>
+              <div class="bg-card rounded p-1 flex items-center gap-1"><i class="ph ph-calendar text-violetL" style="font-size:8px"></i><span style="font-size:6px">Schedule</span></div>
+              <div class="bg-card rounded p-1 flex items-center gap-1"><i class="ph ph-scan text-mint" style="font-size:8px"></i><span style="font-size:6px">Scan</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-center text-sub text-xs mt-4 font-mono">Dashboard</p>
+      </div>
+      <!-- AI Assistant -->
+      <div class="section-reveal snap-center flex-shrink-0">
+        <div class="phone-frame hero-float" style="animation-delay:1.6s">
+          <div class="notch"></div>
+          <div class="screen">
+            <div class="text-center mb-1"><p class="text-white font-bold text-[9px]">AI Assistant</p></div>
+            <div class="flex-1 space-y-2 overflow-hidden">
+              <div class="flex gap-1 items-start"><div class="w-4 h-4 rounded-full bg-violet/30 flex items-center justify-center flex-shrink-0"><i class="ph-fill ph-robot text-violet" style="font-size:7px"></i></div><div class="bg-card rounded-lg rounded-tl-none p-1.5 max-w-[80%]"><p style="font-size:6px">Hello! I'm your BizPilot AI. I can analyze data, generate reports and forecast trends.</p></div></div>
+              <div class="flex justify-end"><div class="bg-gradient-to-r from-violet to-violetL rounded-lg rounded-tr-none p-1.5 max-w-[80%]"><p class="text-white" style="font-size:6px">Analyze this month's revenue</p></div></div>
+              <div class="flex gap-1 items-start"><div class="w-4 h-4 rounded-full bg-violet/30 flex items-center justify-center flex-shrink-0"><i class="ph-fill ph-robot text-violet" style="font-size:7px"></i></div><div class="bg-card rounded-lg rounded-tl-none p-1.5 max-w-[80%]"><p style="font-size:6px">Revenue is up 12.5% MoM. Your top segment grew 23%.</p></div></div>
+              <div class="flex gap-1 items-start"><div class="w-4 h-4 rounded-full bg-violet/30 flex items-center justify-center flex-shrink-0"><i class="ph-fill ph-robot text-violet" style="font-size:7px"></i></div><div class="bg-card rounded-lg rounded-tl-none p-1.5"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div></div>
+            </div>
+            <div class="flex gap-1 mt-1"><div class="flex-1 bg-card rounded-full px-2 py-1"><span class="text-muted" style="font-size:6px">Ask anything...</span></div><div class="w-5 h-5 rounded-full bg-violet flex items-center justify-center"><i class="ph-fill ph-paper-plane-tilt text-white" style="font-size:7px"></i></div></div>
+          </div>
+        </div>
+        <p class="text-center text-sub text-xs mt-4 font-mono">AI Assistant</p>
+      </div>
+      <!-- Analytics -->
+      <div class="section-reveal snap-center flex-shrink-0">
+        <div class="phone-frame hero-float" style="animation-delay:2s">
+          <div class="notch"></div>
+          <div class="screen">
+            <p class="text-white font-bold text-[9px]">Analytics</p>
+            <div class="flex gap-1 mt-1"><span class="pill bg-violet text-white" style="font-size:6px">7D</span><span class="pill bg-card text-sub" style="font-size:6px">30D</span><span class="pill bg-card text-sub" style="font-size:6px">90D</span></div>
+            <div class="bg-card rounded-lg p-2 mt-1">
+              <div class="flex items-end gap-[2px] h-10">
+                <div class="flex-1 rounded-sm bg-violet/40" style="height:30%"></div>
+                <div class="flex-1 rounded-sm bg-violet/50" style="height:55%"></div>
+                <div class="flex-1 rounded-sm bg-violet/60" style="height:45%"></div>
+                <div class="flex-1 rounded-sm bg-violet/70" style="height:75%"></div>
+                <div class="flex-1 rounded-sm bg-violet" style="height:60%"></div>
+                <div class="flex-1 rounded-sm bg-violetL" style="height:90%"></div>
+                <div class="flex-1 rounded-sm bg-cyan" style="height:100%"></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-1 mt-1">
+              <div class="bg-card rounded p-1"><p class="text-muted" style="font-size:5px">MRR</p><p class="text-white font-bold" style="font-size:8px">$48.3K</p></div>
+              <div class="bg-card rounded p-1"><p class="text-muted" style="font-size:5px">Churn</p><p class="text-mint font-bold" style="font-size:8px">2.1% ▼</p></div>
+              <div class="bg-card rounded p-1"><p class="text-muted" style="font-size:5px">LTV</p><p class="text-white font-bold" style="font-size:8px">$2,847</p></div>
+              <div class="bg-card rounded p-1"><p class="text-muted" style="font-size:5px">CAC</p><p class="text-white font-bold" style="font-size:8px">$127</p></div>
+            </div>
+            <p class="text-sub font-bold mt-1" style="font-size:7px">Top Products</p>
+            <div class="space-y-1">
+              <div><p style="font-size:6px">Enterprise Suite</p><div class="h-1 bg-card rounded-full"><div class="h-1 bg-violet rounded-full" style="width:85%"></div></div></div>
+              <div><p style="font-size:6px">Starter Plan</p><div class="h-1 bg-card rounded-full"><div class="h-1 bg-cyan rounded-full" style="width:60%"></div></div></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-center text-sub text-xs mt-4 font-mono">Analytics</p>
+      </div>
+      <!-- Projects -->
+      <div class="section-reveal snap-center flex-shrink-0">
+        <div class="phone-frame hero-float" style="animation-delay:2.4s">
+          <div class="notch"></div>
+          <div class="screen">
+            <div class="flex justify-between items-center"><p class="text-white font-bold text-[9px]">Projects</p><div class="w-4 h-4 rounded-full bg-violet flex items-center justify-center"><i class="ph ph-plus text-white" style="font-size:7px"></i></div></div>
+            <div class="flex gap-1 mt-1"><span class="pill bg-violet text-white" style="font-size:6px">All</span><span class="pill bg-card text-sub" style="font-size:6px">Active</span></div>
+            <div class="space-y-1.5 mt-2">
+              <div class="bg-card rounded-lg p-2"><p class="text-white font-bold" style="font-size:7px">Q2 Marketing</p><div class="h-1 bg-deep rounded-full mt-1"><div class="h-1 bg-mint rounded-full" style="width:75%"></div></div><div class="flex justify-between mt-1"><span class="text-muted" style="font-size:5px">6/8 tasks</span><span class="pill bg-fire/20 text-fire" style="font-size:5px">High</span></div></div>
+              <div class="bg-card rounded-lg p-2"><p class="text-white font-bold" style="font-size:7px">Product Launch v2</p><div class="h-1 bg-deep rounded-full mt-1"><div class="h-1 bg-gold rounded-full" style="width:45%"></div></div><div class="flex justify-between mt-1"><span class="text-muted" style="font-size:5px">5/11 tasks</span><span class="pill bg-fire/20 text-fire" style="font-size:5px">High</span></div></div>
+              <div class="bg-card rounded-lg p-2"><p class="text-white font-bold" style="font-size:7px">Onboarding Flow</p><div class="h-1 bg-deep rounded-full mt-1"><div class="h-1 bg-mint rounded-full" style="width:90%"></div></div><div class="flex justify-between mt-1"><span class="text-muted" style="font-size:5px">9/10 tasks</span><span class="pill bg-gold/20 text-gold" style="font-size:5px">Med</span></div></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-center text-sub text-xs mt-4 font-mono">Projects</p>
+      </div>
+      <!-- Settings -->
+      <div class="section-reveal snap-center flex-shrink-0">
+        <div class="phone-frame hero-float" style="animation-delay:2.8s">
+          <div class="notch"></div>
+          <div class="screen">
+            <p class="text-white font-bold text-[9px] text-center">Settings</p>
+            <div class="flex flex-col items-center mt-2"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet to-violetL flex items-center justify-center"><span class="text-white font-bold text-xs">JP</span></div><p class="text-white font-bold text-[8px] mt-1">James Parker</p><p class="text-muted" style="font-size:5px">james@company.com</p><span class="pill bg-gold/20 text-gold mt-0.5" style="font-size:5px">PRO</span></div>
+            <div class="space-y-1 mt-2">
+              <div class="bg-card rounded px-2 py-1 flex items-center gap-1"><i class="ph ph-credit-card text-violet" style="font-size:7px"></i><span style="font-size:6px">Subscription</span><span class="ml-auto text-muted" style="font-size:6px">Pro $99/mo</span></div>
+              <div class="bg-card rounded px-2 py-1 flex items-center gap-1"><i class="ph ph-bell text-cyan" style="font-size:7px"></i><span style="font-size:6px">Notifications</span><div class="ml-auto w-5 h-3 rounded-full bg-violet relative"><div class="absolute right-0.5 top-0.5 w-2 h-2 rounded-full bg-white"></div></div></div>
+              <div class="bg-card rounded px-2 py-1 flex items-center gap-1"><i class="ph ph-moon text-violetL" style="font-size:7px"></i><span style="font-size:6px">Dark Mode</span><div class="ml-auto w-5 h-3 rounded-full bg-violet relative"><div class="absolute right-0.5 top-0.5 w-2 h-2 rounded-full bg-white"></div></div></div>
+              <div class="bg-card rounded px-2 py-1 flex items-center gap-1"><i class="ph ph-robot text-mint" style="font-size:7px"></i><span style="font-size:6px">AI Model</span><span class="ml-auto text-muted" style="font-size:6px">GPT-4o</span></div>
+              <div class="bg-card rounded px-2 py-1 flex items-center gap-1"><i class="ph ph-sign-out text-fire" style="font-size:7px"></i><span class="text-fire" style="font-size:6px">Sign Out</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-center text-sub text-xs mt-4 font-mono">Settings</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FEATURES ========== -->
+<section class="py-24 px-4 sm:px-8 relative" id="features">
+  <div class="max-w-6xl mx-auto">
+    <div class="section-reveal text-center mb-16">
+      <span class="text-cyan font-mono text-sm tracking-widest uppercase">04 / 核心功能</span>
+      <h2 class="text-3xl sm:text-5xl font-bold mt-3 mb-4">Feature <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan to-mint">Highlights</span></h2>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 hover:border-violet/50 transition-colors group">
+        <div class="w-12 h-12 rounded-xl bg-violet/10 flex items-center justify-center mb-4 group-hover:bg-violet/20 transition-colors"><i class="ph-fill ph-robot text-2xl text-violet"></i></div>
+        <h4 class="font-bold mb-1">AI Business Assistant</h4>
+        <p class="text-sub text-sm">GPT-4o powered chat for instant business analysis and recommendations.</p>
+      </div>
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 hover:border-cyan/50 transition-colors group">
+        <div class="w-12 h-12 rounded-xl bg-cyan/10 flex items-center justify-center mb-4 group-hover:bg-cyan/20 transition-colors"><i class="ph-fill ph-chart-bar text-2xl text-cyan"></i></div>
+        <h4 class="font-bold mb-1">Revenue Dashboard</h4>
+        <p class="text-sub text-sm">Real-time revenue tracking with visual charts and trend indicators.</p>
+      </div>
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 hover:border-violetL/50 transition-colors group">
+        <div class="w-12 h-12 rounded-xl bg-violetL/10 flex items-center justify-center mb-4 group-hover:bg-violetL/20 transition-colors"><i class="ph-fill ph-chart-pie-slice text-2xl text-violetL"></i></div>
+        <h4 class="font-bold mb-1">Smart Analytics</h4>
+        <p class="text-sub text-sm">Deep-dive KPIs: MRR, churn, LTV, CAC, and customer segments.</p>
+      </div>
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 hover:border-mint/50 transition-colors group">
+        <div class="w-12 h-12 rounded-xl bg-mint/10 flex items-center justify-center mb-4 group-hover:bg-mint/20 transition-colors"><i class="ph-fill ph-kanban text-2xl text-mint"></i></div>
+        <h4 class="font-bold mb-1">Project Management</h4>
+        <p class="text-sub text-sm">Track projects, assign tasks, and monitor team progress.</p>
+      </div>
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 hover:border-gold/50 transition-colors group">
+        <div class="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors"><i class="ph-fill ph-file-text text-2xl text-gold"></i></div>
+        <h4 class="font-bold mb-1">AI-Generated Reports</h4>
+        <p class="text-sub text-sm">Create professional business reports in seconds with AI.</p>
+      </div>
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 hover:border-fire/50 transition-colors group">
+        <div class="w-12 h-12 rounded-xl bg-fire/10 flex items-center justify-center mb-4 group-hover:bg-fire/20 transition-colors"><i class="ph-fill ph-scan text-2xl text-fire"></i></div>
+        <h4 class="font-bold mb-1">Document Scanner</h4>
+        <p class="text-sub text-sm">Digitize receipts, invoices, and documents with OCR.</p>
+      </div>
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 hover:border-cyan/50 transition-colors group">
+        <div class="w-12 h-12 rounded-xl bg-cyan/10 flex items-center justify-center mb-4 group-hover:bg-cyan/20 transition-colors"><i class="ph-fill ph-users-three text-2xl text-cyan"></i></div>
+        <h4 class="font-bold mb-1">Team Collaboration</h4>
+        <p class="text-sub text-sm">Work together with up to 25 team members in real-time.</p>
+      </div>
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 hover:border-violet/50 transition-colors group">
+        <div class="w-12 h-12 rounded-xl bg-violet/10 flex items-center justify-center mb-4 group-hover:bg-violet/20 transition-colors"><i class="ph-fill ph-target text-2xl text-violet"></i></div>
+        <h4 class="font-bold mb-1">Custom KPI Tracking</h4>
+        <p class="text-sub text-sm">Define and monitor the metrics that matter most to your business.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TECH STACK ========== -->
+<section class="py-24 px-4 sm:px-8 relative" id="tech">
+  <div class="max-w-6xl mx-auto">
+    <div class="section-reveal text-center mb-16">
+      <span class="text-violet font-mono text-sm tracking-widest uppercase">05 / 技术架构</span>
+      <h2 class="text-3xl sm:text-5xl font-bold mt-3 mb-4">Tech <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet to-violetL">Stack</span></h2>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 text-center gradient-border glow-box-v" style="border-radius:16px">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan/20 to-violet/20 flex items-center justify-center mx-auto mb-4"><i class="ph-fill ph-device-mobile text-3xl text-cyan"></i></div>
+        <h4 class="font-bold text-lg">React Native</h4>
+        <p class="text-violetL text-sm font-mono">+ Expo SDK 52</p>
+        <p class="text-sub text-xs mt-2">Cross-platform mobile framework. One codebase for iOS & Android.</p>
+      </div>
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 text-center gradient-border glow-box-c" style="border-radius:16px">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-mint/20 to-cyan/20 flex items-center justify-center mx-auto mb-4"><i class="ph-fill ph-credit-card text-3xl text-mint"></i></div>
+        <h4 class="font-bold text-lg">RevenueCat</h4>
+        <p class="text-mint text-sm font-mono">Subscriptions</p>
+        <p class="text-sub text-xs mt-2">In-app purchase & subscription management for both platforms.</p>
+      </div>
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 text-center gradient-border glow-box-v" style="border-radius:16px">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet/20 to-gold/20 flex items-center justify-center mx-auto mb-4"><i class="ph-fill ph-brain text-3xl text-violet"></i></div>
+        <h4 class="font-bold text-lg">OpenAI GPT-4o</h4>
+        <p class="text-gold text-sm font-mono">AI Engine</p>
+        <p class="text-sub text-xs mt-2">Powers the AI assistant for business analysis and report generation.</p>
+      </div>
+      <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 text-center gradient-border glow-box-c" style="border-radius:16px">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan/20 to-mint/20 flex items-center justify-center mx-auto mb-4"><i class="ph-fill ph-database text-3xl text-cyan"></i></div>
+        <h4 class="font-bold text-lg">Supabase</h4>
+        <p class="text-cyan text-sm font-mono">Backend</p>
+        <p class="text-sub text-xs mt-2">Database, auth, storage, and real-time APIs in one platform.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== REVENUE PROJECTION ========== -->
+<section class="py-24 px-4 sm:px-8 relative" id="revenue">
+  <div class="max-w-6xl mx-auto">
+    <div class="section-reveal">
+      <span class="text-mint font-mono text-sm tracking-widest uppercase">06 / 营收预测</span>
+      <h2 class="text-3xl sm:text-5xl font-bold mt-3 mb-4">Revenue <span class="text-transparent bg-clip-text bg-gradient-to-r from-mint to-cyan">Projection</span></h2>
+      <p class="text-sub max-w-2xl text-lg mb-16">基于2-5%转化率和85%留存率的保守预估模型</p>
+    </div>
+    <div class="grid lg:grid-cols-3 gap-6 mb-8">
+      <div class="lg:col-span-2 section-reveal rounded-2xl bg-deep/80 border border-border p-6 sm:p-8">
+        <h3 class="text-lg font-semibold mb-1">12-Month MRR Growth</h3>
+        <p class="text-muted text-sm font-mono mb-6">Monthly Recurring Revenue at $99/user</p>
+        <div id="chartRevenue" style="width:100%;height:320px"></div>
+      </div>
+      <div class="space-y-4">
+        <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6">
+          <p class="text-muted text-sm font-mono">MONTH 1</p>
+          <p class="text-3xl font-bold text-white font-mono">$4,950</p>
+          <p class="text-sub text-sm">50 subscribers</p>
+        </div>
+        <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6">
+          <p class="text-muted text-sm font-mono">MONTH 6</p>
+          <p class="text-3xl font-bold text-cyan font-mono">$49,500</p>
+          <p class="text-sub text-sm">500 subscribers</p>
+        </div>
+        <div class="section-reveal rounded-2xl bg-deep/80 border border-border p-6 gradient-border glow-box-v" style="border-radius:16px">
+          <p class="text-muted text-sm font-mono">MONTH 12</p>
+          <p class="text-3xl font-bold text-violet font-mono">$148,500</p>
+          <p class="text-sub text-sm">1,500 subscribers</p>
+          <p class="text-mint text-xs mt-1 font-mono">ARR: $1.78M</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== PROJECT STRUCTURE ========== -->
+<section class="py-24 px-4 sm:px-8 relative" id="structure">
+  <div class="max-w-6xl mx-auto">
+    <div class="section-reveal text-center mb-16">
+      <span class="text-violetL font-mono text-sm tracking-widest uppercase">07 / 项目结构</span>
+      <h2 class="text-3xl sm:text-5xl font-bold mt-3 mb-4">Project <span class="text-transparent bg-clip-text bg-gradient-to-r from-violetL to-violet">Structure</span></h2>
+      <p class="text-sub">20 files &middot; 3,963 lines of code &middot; React Native + Expo</p>
+    </div>
+    <div class="section-reveal max-w-2xl mx-auto rounded-2xl bg-deep/80 border border-border p-6 sm:p-8 font-mono text-sm">
+      <div class="text-violetL mb-2">BizPilotAI/</div>
+      <pre class="text-sub leading-relaxed overflow-x-auto" style="font-size:13px"><code><span class="text-cyan">├──</span> <span class="text-gold">App.js</span>                         <span class="text-muted"># Entry point</span>
+<span class="text-cyan">├──</span> <span class="text-sub">app.json</span>                       <span class="text-muted"># Expo config (iOS/Android)</span>
+<span class="text-cyan">├──</span> <span class="text-sub">package.json</span>                   <span class="text-muted"># Dependencies</span>
+<span class="text-cyan">├──</span> <span class="text-sub">babel.config.js</span>                <span class="text-muted"># Babel + Reanimated</span>
+<span class="text-cyan">├──</span> <span class="text-sub">eas.json</span>                       <span class="text-muted"># EAS Build config</span>
+<span class="text-cyan">├──</span> <span class="text-sub">.gitignore</span>
+<span class="text-cyan">├──</span> <span class="text-violetL">src/</span>
+<span class="text-cyan">│   ├──</span> <span class="text-violetL">constants/</span>
+<span class="text-cyan">│   │   ├──</span> <span class="text-sub">colors.js</span>              <span class="text-muted"># Color system</span>
+<span class="text-cyan">│   │   └──</span> <span class="text-sub">typography.js</span>          <span class="text-muted"># Type + spacing</span>
+<span class="text-cyan">│   ├──</span> <span class="text-violetL">navigation/</span>
+<span class="text-cyan">│   │   └──</span> <span class="text-gold">AppNavigator.js</span>        <span class="text-muted"># Stack + Tab nav</span>
+<span class="text-cyan">│   ├──</span> <span class="text-violetL">screens/</span>
+<span class="text-cyan">│   │   ├──</span> <span class="text-gold">OnboardingScreen.js</span>    <span class="text-muted"># 3-page intro</span>
+<span class="text-cyan">│   │   ├──</span> <span class="text-gold">LoginScreen.js</span>         <span class="text-muted"># Auth screen</span>
+<span class="text-cyan">│   │   ├──</span> <span class="text-gold">PaywallScreen.js</span>       <span class="text-muted"># $99/mo paywall</span>
+<span class="text-cyan">│   │   ├──</span> <span class="text-gold">DashboardScreen.js</span>     <span class="text-muted"># Main dashboard</span>
+<span class="text-cyan">│   │   ├──</span> <span class="text-gold">AIAssistantScreen.js</span>   <span class="text-muted"># AI chat</span>
+<span class="text-cyan">│   │   ├──</span> <span class="text-gold">AnalyticsScreen.js</span>     <span class="text-muted"># Metrics & charts</span>
+<span class="text-cyan">│   │   ├──</span> <span class="text-gold">ProjectsScreen.js</span>      <span class="text-muted"># Task management</span>
+<span class="text-cyan">│   │   └──</span> <span class="text-gold">SettingsScreen.js</span>      <span class="text-muted"># Profile & prefs</span>
+<span class="text-cyan">│   └──</span> <span class="text-violetL">services/</span>
+<span class="text-cyan">│       ├──</span> <span class="text-sub">subscription.js</span>        <span class="text-muted"># RevenueCat SDK</span>
+<span class="text-cyan">│       └──</span> <span class="text-sub">api.js</span>                 <span class="text-muted"># Backend API layer</span>
+<span class="text-cyan">└──</span> <span class="text-sub">PUBLISHING_GUIDE.txt</span>           <span class="text-muted"># 上架发布指南</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ========== PUBLISHING ROADMAP ========== -->
+<section class="py-24 px-4 sm:px-8 relative" id="roadmap">
+  <div class="max-w-4xl mx-auto">
+    <div class="section-reveal text-center mb-16">
+      <span class="text-gold font-mono text-sm tracking-widest uppercase">08 / 发布路线图</span>
+      <h2 class="text-3xl sm:text-5xl font-bold mt-3 mb-4">Publishing <span class="text-transparent bg-clip-text bg-gradient-to-r from-gold to-fire">Roadmap</span></h2>
+    </div>
+    <div class="relative pl-12 sm:pl-16">
+      <div class="timeline-line"></div>
+      <div class="space-y-10">
+        <div class="section-reveal relative">
+          <div class="absolute left-[-32px] sm:left-[-44px] w-10 h-10 rounded-full bg-violet flex items-center justify-center border-4 border-void z-10"><span class="text-white font-bold font-mono text-xs">1</span></div>
+          <div class="rounded-2xl bg-deep/80 border border-border p-6">
+            <div class="flex items-center gap-3 mb-2"><span class="pill bg-violet/20 text-violetL font-mono">WEEK 1-2</span><h4 class="font-bold">Backend API Development</h4></div>
+            <p class="text-sub text-sm">搭建 Supabase 数据库、用户认证、REST API 端点。集成 OpenAI GPT-4o 用于 AI 助手功能。</p>
+          </div>
+        </div>
+        <div class="section-reveal relative">
+          <div class="absolute left-[-32px] sm:left-[-44px] w-10 h-10 rounded-full bg-cyan flex items-center justify-center border-4 border-void z-10"><span class="text-white font-bold font-mono text-xs">2</span></div>
+          <div class="rounded-2xl bg-deep/80 border border-border p-6">
+            <div class="flex items-center gap-3 mb-2"><span class="pill bg-cyan/20 text-cyan font-mono">WEEK 3</span><h4 class="font-bold">Design Assets</h4></div>
+            <p class="text-sub text-sm">制作 App 图标 (1024x1024)、启动屏、App Store 和 Google Play 截图、功能宣传图。</p>
+          </div>
+        </div>
+        <div class="section-reveal relative">
+          <div class="absolute left-[-32px] sm:left-[-44px] w-10 h-10 rounded-full bg-violetL flex items-center justify-center border-4 border-void z-10"><span class="text-white font-bold font-mono text-xs">3</span></div>
+          <div class="rounded-2xl bg-deep/80 border border-border p-6">
+            <div class="flex items-center gap-3 mb-2"><span class="pill bg-violetL/20 text-violetL font-mono">WEEK 4</span><h4 class="font-bold">RevenueCat + Backend Integration</h4></div>
+            <p class="text-sub text-sm">接入 RevenueCat 订阅管理，配置 $99/月 和 $799/年 两档方案。联调前后端数据。</p>
+          </div>
+        </div>
+        <div class="section-reveal relative">
+          <div class="absolute left-[-32px] sm:left-[-44px] w-10 h-10 rounded-full bg-gold flex items-center justify-center border-4 border-void z-10"><span class="text-void font-bold font-mono text-xs">4</span></div>
+          <div class="rounded-2xl bg-deep/80 border border-border p-6">
+            <div class="flex items-center gap-3 mb-2"><span class="pill bg-gold/20 text-gold font-mono">WEEK 5</span><h4 class="font-bold">Testing & QA</h4></div>
+            <p class="text-sub text-sm">全面测试：UI/UX、订阅流程、支付功能、AI 响应质量、多设备兼容性。</p>
+          </div>
+        </div>
+        <div class="section-reveal relative">
+          <div class="absolute left-[-32px] sm:left-[-44px] w-10 h-10 rounded-full bg-mint flex items-center justify-center border-4 border-void z-10"><span class="text-void font-bold font-mono text-xs">5</span></div>
+          <div class="rounded-2xl bg-deep/80 border border-border p-6">
+            <div class="flex items-center gap-3 mb-2"><span class="pill bg-mint/20 text-mint font-mono">WEEK 6</span><h4 class="font-bold">Submit to App Store & Google Play</h4></div>
+            <p class="text-sub text-sm">使用 EAS Build 构建生产版本，提交至 Apple App Store 和 Google Play Store 审核。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FOOTER ========== -->
+<footer class="py-16 px-4 text-center border-t border-border/50">
+  <div class="inline-flex items-center gap-3 mb-4">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet to-cyan flex items-center justify-center text-white font-bold">B</div>
+    <span class="text-xl font-bold">BizPilot AI</span>
+  </div>
+  <p class="text-sub text-sm max-w-md mx-auto mb-6">AI-Powered Business Command Center<br>React Native + Expo &middot; iOS & Android &middot; $99/month</p>
+  <p class="text-muted text-xs font-mono">PROJECT REPORT &middot; MARCH 2026</p>
+</footer>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+// Progress bar
+gsap.to('#progressBar',{scaleX:1,ease:'none',scrollTrigger:{trigger:'body',start:'top top',end:'bottom bottom',scrub:.3}});
+document.getElementById('progressBar').style.transform='scaleX(0)';
+
+// Hero animations
+const heroTL=gsap.timeline({delay:.3});
+heroTL.to('.hero-tag',{opacity:1,y:0,duration:.6,ease:'power3.out'})
+  .to('.hero-title',{opacity:1,y:0,duration:.8,ease:'power3.out'},'-=.3')
+  .to('.hero-sub',{opacity:1,y:0,duration:.6,ease:'power3.out'},'-=.4')
+  .to('.hero-sub2',{opacity:1,y:0,duration:.6,ease:'power3.out'},'-=.3')
+  .to('.hero-stats',{opacity:1,y:0,duration:.6,ease:'power3.out'},'-=.2')
+  .to('.hero-scroll',{opacity:1,duration:.6},'-=.2');
+
+// Section reveals
+gsap.utils.toArray('.section-reveal').forEach((el,i)=>{
+  gsap.to(el,{opacity:1,y:0,duration:.7,ease:'power3.out',scrollTrigger:{trigger:el,start:'top 85%',toggleActions:'play none none none'}});
+});
+
+// Charts
+function initCharts(){
+  // Market chart
+  const c1=echarts.init(document.getElementById('chartMarket'),null,{renderer:'svg'});
+  c1.setOption({
+    tooltip:{trigger:'axis',backgroundColor:'#1E2548',borderColor:'#2A3158',textStyle:{color:'#e2e8f0',fontFamily:'Space Grotesk'},formatter:function(p){return '<b>'+p[0].name+'</b><br/>Revenue: <span style="color:#6C5CE7;font-weight:700">$'+p[0].value+'M</span>'}},
+    grid:{left:60,right:20,top:10,bottom:40},
+    xAxis:{type:'category',data:['ChatGPT','Disney+','Honor of Kings','YouTube','TikTok','Google One','Gemini'],axisLine:{lineStyle:{color:'#2A3158'}},axisLabel:{color:'#8B92B0',fontFamily:'Space Grotesk',fontSize:11,rotate:0,interval:0},axisTick:{show:false}},
+    yAxis:{type:'value',axisLine:{show:false},splitLine:{lineStyle:{color:'#2A3158',type:'dashed'}},axisLabel:{color:'#5A6180',fontFamily:'JetBrains Mono',fontSize:10,formatter:'${value}M'}},
+    series:[{type:'bar',data:[879,1200,1200,680,580,420,310],barWidth:'45%',itemStyle:{borderRadius:[6,6,0,0],color:function(p){const cols=[{s:'#6C5CE7',e:'#A29BFE'},{s:'#00D2FF',e:'#6C5CE7'},{s:'#FFD700',e:'#FF9100'},{s:'#FF5252',e:'#FF9100'},{s:'#00E676',e:'#00D2FF'},{s:'#A29BFE',e:'#6C5CE7'},{s:'#00D2FF',e:'#A29BFE'}];return new echarts.graphic.LinearGradient(0,1,0,0,[{offset:0,color:cols[p.dataIndex].s},{offset:1,color:cols[p.dataIndex].e}])}},animationDuration:1500,animationEasing:'cubicOut'}]
+  });
+
+  // Revenue projection chart
+  const c2=echarts.init(document.getElementById('chartRevenue'),null,{renderer:'svg'});
+  c2.setOption({
+    tooltip:{trigger:'axis',backgroundColor:'#1E2548',borderColor:'#2A3158',textStyle:{color:'#e2e8f0',fontFamily:'Space Grotesk'},formatter:function(p){return 'Month '+p[0].name+'<br/>MRR: <span style="color:#00E676;font-weight:700">$'+p[0].value.toLocaleString()+'</span><br/>Users: <span style="color:#00D2FF;font-weight:700">'+p[1].value.toLocaleString()+'</span>'}},
+    legend:{show:true,top:0,right:0,textStyle:{color:'#8B92B0',fontFamily:'Space Grotesk'},itemWidth:12,itemHeight:3},
+    grid:{left:65,right:60,top:35,bottom:35},
+    xAxis:{type:'category',data:['1','2','3','4','5','6','7','8','9','10','11','12'],axisLine:{lineStyle:{color:'#2A3158'}},axisLabel:{color:'#8B92B0',fontFamily:'JetBrains Mono',fontSize:11},axisTick:{show:false}},
+    yAxis:[{type:'value',name:'MRR',nameTextStyle:{color:'#5A6180',fontFamily:'JetBrains Mono',fontSize:10},axisLine:{show:false},splitLine:{lineStyle:{color:'#2A3158',type:'dashed'}},axisLabel:{color:'#5A6180',fontFamily:'JetBrains Mono',fontSize:10,formatter:function(v){return '$'+Math.round(v/1000)+'K'}}},
+    {type:'value',name:'Users',nameTextStyle:{color:'#5A6180',fontFamily:'JetBrains Mono',fontSize:10},axisLine:{show:false},splitLine:{show:false},axisLabel:{color:'#5A6180',fontFamily:'JetBrains Mono',fontSize:10}}],
+    series:[
+      {name:'MRR ($)',type:'line',smooth:true,data:[4950,11880,19800,27720,34650,49500,59400,74250,89100,108900,128700,148500],lineStyle:{width:3,color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'#6C5CE7'},{offset:1,color:'#00E676'}])},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(108,92,231,0.25)'},{offset:1,color:'rgba(108,92,231,0)'}])},symbol:'circle',symbolSize:6,itemStyle:{color:'#6C5CE7',borderWidth:2,borderColor:'#0A0E27'},
+        markPoint:{data:[{type:'max',name:'Peak',symbolSize:40,label:{fontFamily:'JetBrains Mono',fontSize:10}}],itemStyle:{color:'#00E676'}},
+        animationDuration:2000,animationEasing:'cubicOut'},
+      {name:'Users',type:'bar',yAxisIndex:1,data:[50,120,200,280,350,500,600,750,900,1100,1300,1500],barWidth:'30%',itemStyle:{borderRadius:[4,4,0,0],color:new echarts.graphic.LinearGradient(0,1,0,0,[{offset:0,color:'rgba(0,210,255,0.1)'},{offset:1,color:'rgba(0,210,255,0.4)'}])},animationDuration:1800}
+    ]
+  });
+
+  window.addEventListener('resize',()=>{c1.resize();c2.resize()});
+
+  // Animate charts on scroll
+  ScrollTrigger.create({trigger:'#chartMarket',start:'top 80%',onEnter:()=>c1.resize()});
+  ScrollTrigger.create({trigger:'#chartRevenue',start:'top 80%',onEnter:()=>c2.resize()});
+}
+
+// Init charts after DOM ready
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initCharts)}else{initCharts()}
+</script>
+</body>
+</html>
